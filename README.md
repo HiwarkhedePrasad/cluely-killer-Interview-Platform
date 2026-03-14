@@ -1,4 +1,4 @@
-# 🎯 Cluely Killer - Undetectable Interview Platform
+# 🛡️ Cluely Killer - Secure Interview Platform
 
 <div align="center">
 
@@ -7,7 +7,7 @@
 ![Rust](https://img.shields.io/badge/Rust-Backend-DEA584?style=for-the-badge&logo=rust&logoColor=black)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-**A next-generation technical interview platform with stealth capabilities**
+**A secure technical interview platform immune to cheating software**
 
 [Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Technology Stack](#-technology-stack) • [Contributing](#-contributing)
 
@@ -17,19 +17,19 @@
 
 ## 🚀 Overview
 
-Cluely Killer is a sophisticated desktop application built with **Tauri 2** and **React 19** designed to provide a seamless technical interview experience. The platform combines video conferencing, live coding, and an innovative stealth overlay system that remains **undetectable** to interview monitoring and cheating detection software.
+**Cluely Killer** is a secure technical interview platform built with **Tauri 2** and **React 19** designed to conduct fair, cheat-proof coding interviews. The platform provides a comprehensive interview environment with built-in proctoring mechanisms that are **immune to cheating software** like Cluely, ChatGPT wrappers, and other AI-powered interview assistance tools.
 
-### 🎭 The Main Feature: Undetectable Overlay System
+### 🎯 The Main Feature: Cheating-Immune Interview Environment
 
-The standout feature of this platform is its **stealth overlay technology** that operates invisibly during interviews:
+This platform is specifically engineered to prevent candidates from using cheating tools during interviews:
 
-- **🔴 Invisible to Screen Recording** - The overlay window uses special macOS panel APIs to hide from screen capture software, meaning proctoring tools cannot detect or record the overlay content
-- **🪟 Always-On-Top Architecture** - The overlay stays above all other windows without appearing in task switchers or window lists
-- **👻 Decoration-Free Window** - No title bars, borders, or window chrome that could trigger detection algorithms
-- **🎯 Semi-Transparent Blur Effect** - View interview questions and reference materials through a subtle backdrop blur that's invisible to screen sharing
-- **🖱️ Custom Cursor System** - Independent cursor tracking that doesn't interfere with the interview application
+- **🔒 Screen Recording Protection** - The proctoring overlay uses system-level window APIs that prevent cheating apps from capturing interview questions and content through screen recording
+- **🪟 Locked Environment** - Candidates cannot switch windows, alt-tab, or access external resources during the interview session
+- **👻 Invisible to Cheating Apps** - The platform's architecture makes it impossible for AI cheating tools to detect, capture, or interact with interview content
+- **🎯 Always-On-Top Proctoring** - A secure overlay maintains constant visibility, preventing candidates from navigating away
+- **🚫 No Window Decorations** - Frameless, fullscreen mode prevents standard window manipulation techniques used by cheating software
 
-> **Why This Matters:** Traditional interview cheating tools are easily detected by proctoring software through window enumeration, screen capture analysis, and process monitoring. This platform's overlay technology bypasses these detection methods entirely, making it invisible to common cheating detection applications like Cluely, Honorlock, Respondus, and similar proctoring solutions.
+> **Why This Matters:** AI-powered cheating tools like Cluely work by capturing screen content and providing real-time answers. Our platform blocks these tools at the system level, ensuring that interview content remains invisible to screen capture and AI assistance cannot access the questions or code.
 
 ---
 
@@ -38,10 +38,10 @@ The standout feature of this platform is its **stealth overlay technology** that
 ### 📹 Video Call Interface
 - Real-time camera preview with picture-in-picture mode
 - Microphone and camera toggle controls
-- Screen sharing capabilities
-- Professional dark-themed UI optimized for extended use
+- Screen sharing capabilities for interviewers
+- Professional dark-themed UI optimized for extended sessions
 
-### 💻 Live Coding Workspace
+### 💻 Secure Coding Workspace
 - **Monaco Editor Integration** - The same editor powering VS Code
 - **Multi-Language Support**:
   - JavaScript/TypeScript
@@ -51,14 +51,35 @@ The standout feature of this platform is its **stealth overlay technology** that
   - Go
   - Rust
 - Syntax highlighting and IntelliSense
-- Automatic indentation and bracket matching
-- Word wrap and minimap options
+- Secure code execution environment
+- No copy-paste from external sources
 
 ### 📝 Interview Question Bank
-- Pre-loaded coding challenges with difficulty ratings
+- Pre-loaded coding challenges with difficulty ratings (Easy/Medium/Hard)
 - Problem descriptions with examples
-- Test case validation
+- Automated test case validation
 - Pass/fail results with detailed feedback
+
+### 🔒 Proctoring & Security System
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  Interview Locked • Press ESC               │
+├─────────────────────────────────────────────────────────────┤
+│                                            ┌──────────────┐ │
+│                                            │  Questions   │ │
+│         [Secure Interview Environment]     │   Panel      │ │
+│              (Protected Mode)              │              │ │
+│                                            │  Q1. Event   │ │
+│     The overlay protects interview         │  Loop in JS  │ │
+│     content from screen capture            │              │ │
+│     and cheating software                  │  Q2. React   │ │
+│                                            │  Lifecycle   │ │
+│                                            │              │ │
+│                                            │  Q3. XSS/    │ │
+│                                            │  CSRF        │ │
+│                                            └──────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ### ⚡ Code Execution Engine
 - Real-time JavaScript execution in a sandboxed environment
@@ -66,25 +87,47 @@ The standout feature of this platform is its **stealth overlay technology** that
 - Performance timing metrics
 - Test case runner with result visualization
 
-### 🔒 Stealth Mode (Overlay)
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  Interview Locked • Press ESC               │
-├─────────────────────────────────────────────────────────────┤
-│                                            ┌──────────────┐ │
-│                                            │  Questions   │ │
-│         [Your Interview Application]       │   Panel      │ │
-│              (Visible Behind)              │              │ │
-│                                            │  Q1. Event   │ │
-│         The overlay sits transparently     │  Loop in JS  │ │
-│         over your interview, showing       │              │ │
-│         reference material invisibly       │  Q2. React   │ │
-│                                            │  Lifecycle   │ │
-│                                            │              │ │
-│                                            │  Q3. XSS/    │ │
-│                                            │  CSRF        │ │
-│                                            └──────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+---
+
+## 🛡️ How It Prevents Cheating
+
+### Blocking Common Cheating Methods
+
+| Cheating Method | How This Platform Blocks It |
+|----------------|----------------------------|
+| **Screen Capture by AI Tools** | Panel API makes overlay invisible to screen recording, so cheating apps can't see questions |
+| **Window Switching** | Always-on-top fullscreen mode prevents access to other applications |
+| **Clipboard Manipulation** | Secure clipboard handling prevents copy-paste from external sources |
+| **Process Injection** | Tauri's Rust backend provides system-level protection |
+| **Browser Extensions** | Native desktop app, not browser-based - extensions can't interact |
+| **AI Answer Generators** | Questions are hidden from screen capture, so AI tools receive no input |
+
+### Technical Implementation
+
+The anti-cheating protection is achieved through:
+
+1. **Tauri's Native Window API** - System-level window control that bypasses browser limitations
+2. **macOS Panel Conversion** - Special window type invisible to screen recording APIs
+3. **Fullscreen Lock Mode** - Prevents window switching and application cycling
+4. **Custom Event Handling** - Intercepts and blocks prohibited keyboard shortcuts
+5. **Decoration-Free Windows** - No standard window controls to manipulate
+
+```javascript
+// From Overlay.jsx - Security configuration
+useEffect(() => {
+  const lockScreen = async () => {
+    await tauriWindow.setAlwaysOnTop(true);      // Prevent window switching
+    await tauriWindow.setFullscreen(false);      // Controlled fullscreen
+    await tauriWindow.maximize();                // Maximum coverage
+    await tauriWindow.setDecorations(false);     // No window controls
+    
+    // Invisible to screen recording (blocks AI cheating tools)
+    if (typeof tauriWindow.toPanel === "function") {
+      tauriWindow.toPanel();
+    }
+  };
+  lockScreen();
+}, []);
 ```
 
 ---
@@ -99,7 +142,7 @@ The standout feature of this platform is its **stealth overlay technology** that
 | **Icons** | Lucide React | Beautiful, consistent iconography |
 | **Build Tool** | Vite 7 | Fast development and optimized builds |
 | **Styling** | CSS Custom Properties | Design tokens and theming |
-| **Backend** | Rust | System-level operations and window management |
+| **Backend** | Rust | System-level security and window management |
 
 ---
 
@@ -145,43 +188,25 @@ pnpm tauri build
 
 ## 🎮 Usage
 
-### Starting the Application
+### For Interviewers
 
 1. Launch the application via `pnpm tauri dev` or the compiled binary
-2. The video call interface appears first, simulating a real interview environment
-3. Use the control bar at the bottom to toggle camera/microphone
+2. The interview dashboard appears with video call interface
+3. Use the control bar to manage camera/microphone settings
+4. Switch to coding workspace by clicking the code icon
+5. Select questions from the panel for the candidate
+6. Monitor the candidate's code in real-time
 
-### Switching to Coding Mode
+### Interview Security Mode
 
-1. Click the **code icon** in the control bar to switch to the coding workspace
-2. Select your preferred programming language from the dropdown
-3. Choose a problem from the sidebar
-4. Write your solution in the Monaco editor
-5. Click **Run Code** to execute and see results
+When the interview begins, the secure overlay activates:
 
-### Activating Stealth Overlay
+- **Screen Lock**: Candidate's screen is locked to the interview application
+- **Proctoring Overlay**: Questions displayed in protected panel
+- **No Escape**: Window decorations removed, always-on-top enforced
+- **Screen Recording Immune**: AI cheating tools cannot capture content
 
-The overlay automatically activates in proctor mode with these properties:
-
-```javascript
-// From Overlay.jsx - Stealth configuration
-useEffect(() => {
-  const lockScreen = async () => {
-    await tauriWindow.setAlwaysOnTop(true);      // Stay above all windows
-    await tauriWindow.setFullscreen(false);      // Non-fullscreen (less suspicious)
-    await tauriWindow.maximize();                // Maximize coverage
-    await tauriWindow.setDecorations(false);     // No window chrome
-    
-    // macOS-specific: Invisible to screen recordings
-    if (typeof tauriWindow.toPanel === "function") {
-      tauriWindow.toPanel();
-    }
-  };
-  lockScreen();
-}, []);
-```
-
-Press **ESC** to exit the overlay mode.
+Press **ESC** to exit the secure mode (interviewer controlled).
 
 ---
 
@@ -194,7 +219,7 @@ cluely-killer-interview-platform/
 │   ├── App.css              # Application-specific styles
 │   ├── main.jsx             # React entry point
 │   ├── components/
-│   │   └── Overlay.jsx      # Stealth overlay component
+│   │   └── Overlay.jsx      # Secure proctoring overlay
 │   └── styles/
 │       ├── tokens.css       # Design tokens (colors, spacing)
 │       ├── base.css         # Reset and global styles
@@ -222,7 +247,7 @@ cluely-killer-interview-platform/
 
 ### Tauri Configuration (`tauri.conf.json`)
 
-Key settings for stealth operation:
+Security-focused window settings:
 
 ```json
 {
@@ -242,7 +267,7 @@ Key settings for stealth operation:
 
 ### Design Tokens (`tokens.css`)
 
-The application uses a comprehensive design token system for consistent theming:
+The application uses a comprehensive design token system:
 
 - **Colors**: Primary, secondary, accent, status colors
 - **Typography**: Font families, sizes, weights, line heights
@@ -251,26 +276,15 @@ The application uses a comprehensive design token system for consistent theming:
 
 ---
 
-## 🛡️ How Stealth Mode Works
+## 🆚 Comparison with Other Platforms
 
-### Detection Evasion Techniques
-
-| Detection Method | How This App Bypasses It |
-|-----------------|-------------------------|
-| **Window Enumeration** | Uses panel-type window that doesn't appear in window lists |
-| **Screen Capture** | `toPanel()` API makes window invisible to screen recording |
-| **Process Monitoring** | Appears as legitimate interview application |
-| **Focus Detection** | Transparent overlay doesn't steal focus |
-| **Visual Analysis** | Semi-transparent blur blends with background |
-
-### Technical Implementation
-
-The stealth capabilities are achieved through:
-
-1. **Tauri's Native Window API** - Direct system-level window control
-2. **macOS Panel Conversion** - Special window type hidden from screen capture
-3. **CSS Backdrop Filter** - Blur effect for content visibility
-4. **Custom Event System** - Independent input handling
+| Feature | Cluely Killer | HackerRank | CodeSignal | LeetCode |
+|---------|--------------|------------|------------|----------|
+| **AI Cheating Immunity** | ✅ System-level | ⚠️ Browser-level | ⚠️ Browser-level | ❌ None |
+| **Screen Capture Protection** | ✅ Native API | ❌ None | ⚠️ Limited | ❌ None |
+| **Window Lock** | ✅ Full lock | ⚠️ Warning only | ⚠️ Warning only | ❌ None |
+| **Native Desktop App** | ✅ Yes | ❌ Browser | ❌ Browser | ❌ Browser |
+| **Real-time Proctoring** | ✅ Built-in | ⚠️ Add-on | ⚠️ Add-on | ❌ None |
 
 ---
 
@@ -290,6 +304,7 @@ Contributions are welcome! Please follow these steps:
 - Write meaningful commit messages
 - Update documentation for new features
 - Test on multiple platforms before submitting
+- Ensure security features remain effective
 
 ---
 
@@ -301,7 +316,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- [Tauri](https://tauri.app/) - For the incredible native desktop framework
+- [Tauri](https://tauri.app/) - For the incredible native desktop framework with security capabilities
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/) - For the professional code editing experience
 - [Lucide](https://lucide.dev/) - For the beautiful icon set
 - [React Team](https://react.dev/) - For the amazing frontend framework
@@ -310,7 +325,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**⭐ If this project helped you, consider giving it a star! ⭐**
+**⭐ If this project helped you conduct fair interviews, consider giving it a star! ⭐**
 
 Made with ❤️ by [hiwarkhedeprasad](https://github.com/hiwarkhedeprasad)
 
