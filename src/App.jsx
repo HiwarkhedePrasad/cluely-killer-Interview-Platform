@@ -5,9 +5,12 @@ import {
   Play, Code2, PhoneOff, Users, Clock, Settings,
   Maximize2, Minimize2, ChevronRight, Terminal,
   FileText, CheckCircle2, XCircle, AlertCircle,
-  MessageSquare, X, GripVertical
+  MessageSquare, X, GripVertical, Bot, PanelRightClose, PanelRight
 } from 'lucide-react';
 import './App.css';
+import { AIChat } from './components/AIChat';
+import { VoiceControls } from './components/VoiceControls';
+import { useOllama } from './hooks/useOllama';
 
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
@@ -522,13 +525,29 @@ function CodingWorkspace({
   activeTab, setActiveTab,
   onBackToVideo,
   videoOn, micOn, setVideoOn, setMicOn,
-  timer, stream
+  timer, stream,
+  showAIChat, setShowAIChat
 }) {
   const editorRef = useRef(null);
+  const speakResponseRef = useRef(null);
 
   const handleEditorMount = (editor) => {
     editorRef.current = editor;
     editor.focus();
+  };
+
+  // Get current question text for AI context
+  const currentQuestionText = questions[activeQuestion]?.title + ': ' + questions[activeQuestion]?.description;
+
+  // Handle voice transcript - send to AI
+  const handleVoiceTranscript = async (transcript) => {
+    // This will be handled by AIChat component
+    console.log('Voice transcript:', transcript);
+  };
+
+  // Store speak function reference for TTS
+  const handleSpeakResponse = (speakFn) => {
+    speakResponseRef.current = speakFn;
   };
 
   return (
@@ -538,7 +557,7 @@ function CodingWorkspace({
         <div className="app-topbar__section">
           <Code2 size={18} style={{ color: 'var(--color-text-accent)' }} />
           <span className="type-label" style={{ letterSpacing: 'var(--type-tracking-wide)', color: 'var(--color-text-primary)', textTransform: 'uppercase' }}>
-            Interview
+            AI Interview
           </span>
           <span className="divider--vertical" style={{ height: '20px' }} />
           <span className="badge badge-info">{LANGUAGES.find(l => l.id === language)?.label}</span>
@@ -552,6 +571,14 @@ function CodingWorkspace({
           <Clock size={14} style={{ color: 'var(--color-text-tertiary)' }} />
           <span className="type-mono" style={{ color: 'var(--color-text-secondary)' }}>{timer.format()}</span>
           <span className="divider--vertical" style={{ height: '20px' }} />
+          
+          {/* Voice Controls */}
+          <VoiceControls 
+            onTranscript={handleVoiceTranscript}
+            onSpeakResponse={handleSpeakResponse}
+          />
+          
+          <span className="divider--vertical" style={{ height: '20px' }} />
           <button className="btn-icon" onClick={() => setMicOn(!micOn)} title={micOn ? 'Mute' : 'Unmute'}
             style={!micOn ? { color: 'var(--color-status-error)' } : {}}>
             {micOn ? <Mic size={16} /> : <MicOff size={16} />}
@@ -560,13 +587,25 @@ function CodingWorkspace({
             style={!videoOn ? { color: 'var(--color-status-error)' } : {}}>
             {videoOn ? <Video size={16} /> : <VideoOff size={16} />}
           </button>
+          <span className="divider--vertical" style={{ height: '20px' }} />
+          
+          {/* AI Chat Toggle */}
+          <button 
+            className={`btn-icon ${showAIChat ? 'btn-icon--active' : ''}`} 
+            onClick={() => setShowAIChat(!showAIChat)} 
+            title={showAIChat ? 'Hide AI Chat' : 'Show AI Chat'}
+            style={showAIChat ? { color: 'var(--color-primary)', background: 'var(--color-primary-alpha)' } : {}}
+          >
+            {showAIChat ? <PanelRightClose size={16} /> : <Bot size={16} />}
+          </button>
+          
           <button className="btn-icon" onClick={onBackToVideo} title="Back to video view">
             <Maximize2 size={16} />
           </button>
         </div>
       </div>
 
-      <div className="workspace">
+      <div className="workspace" style={{ display: 'grid', gridTemplateColumns: showAIChat ? '280px 1fr 380px' : '280px 1fr', gap: 'var(--space-md)' }}>
         {/* Sidebar — Questions */}
         <div className="workspace-sidebar no-select">
           <div className="questions-list">
@@ -740,6 +779,18 @@ function CodingWorkspace({
           </div>
         </div>
 
+        {/* AI Chat Panel */}
+        {showAIChat && (
+          <div className="workspace-ai-chat">
+            <AIChat
+              currentQuestion={currentQuestionText}
+              currentCode={code}
+              currentLanguage={language}
+              onStartInterview={() => {}}
+            />
+          </div>
+        )}
+
         {/* PiP Video */}
         <PipVideo
           onExpand={onBackToVideo}
@@ -764,6 +815,9 @@ function App() {
   const [videoOn, setVideoOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const [screenShare, setScreenShare] = useState(false);
+
+  // AI Chat visibility
+  const [showAIChat, setShowAIChat] = useState(true);
 
   // Camera
   const camera = useCamera();
@@ -922,6 +976,8 @@ function App() {
       setMicOn={setMicOn}
       timer={timer}
       stream={camera.stream}
+      showAIChat={showAIChat}
+      setShowAIChat={setShowAIChat}
     />
   );
 }
