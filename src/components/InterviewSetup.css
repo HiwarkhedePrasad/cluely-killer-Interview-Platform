@@ -411,6 +411,110 @@
 
 .is__join .is__cta { margin-top: 14px; }
 
+/* ── Error message ── */
+.is__error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 2px;
+  color: #ef4444;
+  font-size: 12px;
+  margin-bottom: 12px;
+  width: 100%;
+  max-width: 300px;
+}
+
+/* ── Job confirmation screen ── */
+.is__job-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.is__job-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-border-default, #2c2c2c);
+  border-radius: 50%;
+  color: var(--color-text-primary, #fff);
+  margin-bottom: 16px;
+}
+
+.is__job-card {
+  width: 100%;
+  padding: 16px;
+  background: var(--color-surface-raised, #141414);
+  border: 1px solid var(--color-border-default, #2c2c2c);
+  border-radius: 4px;
+  margin: 16px 0;
+}
+
+.is__job-title {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary, #fff);
+  margin-bottom: 12px;
+}
+
+.is__job-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.is__skill-tag {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-secondary, #b0b0b0);
+  background: var(--color-surface-base, #0e0e0e);
+  border: 1px solid var(--color-border-default, #2c2c2c);
+  padding: 4px 8px;
+  border-radius: 2px;
+}
+
+.is__skill-more {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  color: var(--color-text-tertiary, #737373);
+  padding: 4px 8px;
+}
+
+.is__job-candidate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary, #b0b0b0);
+  font-size: 13px;
+  margin: 8px 0 16px;
+}
+
+.is__job-info {
+  color: var(--color-text-tertiary, #737373);
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.is__job-info p {
+  margin: 0 0 8px;
+}
+
+.is__job-info p:last-child {
+  margin-bottom: 0;
+}
+
 /* ── Projects scrollbar ── */
 .is__projects::-webkit-scrollbar { width: 3px; }
 .is__projects::-webkit-scrollbar-track { background: transparent; }

@@ -12,6 +12,11 @@
   width: 100vw;
   overflow: hidden;
   background-color: var(--color-surface-ground);
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
 /* ── Top Bar (titlebar / session info) ── */
@@ -331,13 +336,17 @@
    ================================================================ */
 
 .video-fullscreen {
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100vw;
   height: 100vh;
   background: radial-gradient(ellipse at center, var(--raw-neutral-150), var(--raw-neutral-50));
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
 /* ── Video Grid ── */

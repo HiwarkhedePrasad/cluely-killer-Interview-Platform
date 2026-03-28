@@ -1,14 +1,14 @@
-# AI Interview Platform
+# AI Recruitment Screening Platform
 
-A desktop application for conducting voice-based technical interviews with 3 AI agents, live coding challenges, video conferencing, and post-interview reporting. Built with Tauri 2, React 19, and Ollama.
+A desktop application for conducting AI-powered technical interviews for recruitment screening. Recruiters create job postings, invite candidates via email, and candidates complete voice-based interviews with AI agents that evaluate fit against specific job requirements. Built with Tauri 2, React 19, Supabase, and Ollama.
 
 ---
 
 ## Table of Contents
 
 - [Features](#features)
-- [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
 - [Project Structure](#project-structure)
@@ -18,72 +18,68 @@ A desktop application for conducting voice-based technical interviews with 3 AI 
 
 ## Features
 
+### Recruitment Workflow
+
+```
+Recruiter → Creates job → Adds candidate → Sends invite email with code
+                                                    ↓
+Candidate ← Installs app ← Enters code ← Gets personalized AI interview
+                                                    ↓
+Recruiter ← Views results dashboard ← Scores & transcript uploaded
+```
+
+### Recruiter Portal (Web App)
+- **Job Management**: Create, edit, and manage job postings with required skills and experience levels
+- **Candidate Pool**: Add candidates with resume uploads (PDF/text parsing)
+- **Invite System**: Generate unique 6-character codes and send email invitations
+- **Results Dashboard**: View interview scores, AI recommendations, and transcripts
+- **Authentication**: Secure login via Supabase Auth
+
+### Candidate App (Tauri Desktop)
+- **Code Entry**: Candidates enter their interview code from the email
+- **Job-Tailored Interview**: AI agents ask questions based on resume + job requirements
+- **Skill Gap Analysis**: AI evaluates candidate skills against required job skills
+- **Results Upload**: Scores and transcripts automatically saved to Supabase
+
 ### 3 AI Interview Agents
 
-Three distinct AI personas conduct the interview simultaneously, each with their own voice and questioning style:
+Three distinct AI personas conduct the interview, each evaluating different aspects:
 
-| Agent | Name | Role | Voice | Focus |
-|-------|------|------|-------|-------|
-| Peer | Alex Chen | Junior Developer | Fast, higher pitch (friendly) | Fundamentals, communication, day-to-day dev work |
-| Team Lead | Sarah Mitchell | Tech Lead | Medium pace (professional) | Architecture decisions, trade-offs, team collaboration |
-| Veteran | James Rodriguez | Principal Engineer | Slow, deeper (authoritative) | Edge cases, production experience, deep technical |
+| Agent | Name | Role | Focus |
+|-------|------|------|-------|
+| Peer | Alex Chen | Junior Developer | Fundamentals, communication, day-to-day work |
+| Team Lead | Sarah Mitchell | Tech Lead | Architecture, trade-offs, team collaboration |
+| Veteran | James Rodriguez | Principal Engineer | Edge cases, production experience, deep technical |
 
-All three agents share conversation history to avoid repeating questions. A random agent responds to the candidate, with a 30% chance of a follow-up from a different agent.
+**NEW**: Agents now ask questions tailored to both the candidate's resume AND the job requirements. They identify skill gaps and probe missing required skills.
 
 ### Voice Interview System
 
-- **Speech Recognition**: Web Speech API with continuous mode, interim results, and grammar hints for technical terms
-- **Voice Activity Detection**: User speaking interrupts the agent mid-sentence automatically
-- **Silence Detection**: 1.5 seconds of silence after the user starts speaking triggers AI response processing
-- **Distinct TTS Voices**: Each agent uses a different OS voice with adjusted rate/pitch for maximum distinguishability
-- **Session Logging**: All transcript entries (candidate and agents) are logged with timestamps to the Tauri backend
+- **Speech Recognition**: Web Speech API with continuous mode and technical grammar hints
+- **Voice Activity Detection**: Interrupts agent when user starts speaking
+- **Distinct TTS Voices**: Each agent uses different voice characteristics
+- **Full Transcription**: All Q&A logged with timestamps
 
 ### Resume & Project Parsing
 
-Upload a PDF or paste resume text. The platform automatically extracts:
-- Skills across 6 categories (languages, frontend, backend, database, devops, tools)
-- Up to 5 projects with name, description, and detected technologies
-- Experience level (junior/mid/senior) and years of experience
+Upload PDF or paste text to extract:
+- Skills across 6 categories
+- Up to 5 projects with technologies
+- Experience level and years
 
-This context is injected into the AI agents' prompts so they ask relevant, personalized questions.
+### Skill Fit Analysis
 
-### No DSA / LeetCode Questions
-
-All questions are **project-based and experience-focused**:
-- Project-deep-dive questions (based on candidate's actual projects)
-- Skill-based questions (React, Node.js, Python, PostgreSQL, Docker, AWS, TypeScript)
-- Architecture questions (for mid/senior candidates)
-- Problem-solving and teamwork questions
-
-### Coding Workspace
-
-- **Monaco Editor** (VS Code's editor) with syntax highlighting for 7 languages: JavaScript, TypeScript, Python, Java, C++, Go, Rust
-- **Resizable panels**: drag to resize the questions sidebar and output panel
-- **Code execution**: JavaScript runs in a sandboxed environment with console output capture
-- **Test runner**: Predefined test cases run against the user's code with pass/fail results
-- **AI code review**: Ollama-powered feedback on correctness, efficiency, and code quality
-
-### Video Call Mode
-
-- Live camera feed with toggle controls for video and microphone
-- Screen sharing capability
-- Draggable picture-in-picture self-view
-- 20-minute countdown timer with last-minute warning banner
-- Graceful transition to coding mode (waits for agent to finish speaking before switching)
+For recruitment screening, the AI performs automatic skill gap analysis:
+- ✓ **Matched Skills**: Skills the candidate has that match job requirements
+- ✗ **Missing Skills**: Required skills not found on resume (agents will probe these)
 
 ### Interview Report
 
-After the session ends, a comprehensive report is generated:
-- Summary cards: average score, questions asked, strengths, areas to improve
-- Per-question analysis: question, candidate answer, preferred answer, feedback, quality score (1-10)
-- Downloadable as a self-contained HTML file with print styles
-
-### Proctor / Lockdown Mode
-
-Activated by the Rust backend on startup:
-- Window opens maximized with no decorations, always-on-top
-- On Windows: `SetWindowDisplayAffinity` with `WDA_EXCLUDEFROMCAPTURE` hides the window from screen recordings
-- On macOS: panel-level window for the same effect
+After completion:
+- Overall, technical, and communication scores (1-10)
+- AI recommendation (Strong Yes / Yes / Maybe / No / Strong No)
+- Strengths and weaknesses
+- Full Q&A transcript with per-answer scores
 
 ---
 
@@ -93,6 +89,7 @@ Activated by the Rust backend on startup:
 |-------|------------|
 | Frontend | React 19.1 + Vite 7 |
 | Desktop | Tauri 2 (Rust backend) |
+| Backend | Supabase (PostgreSQL + Auth + Edge Functions) |
 | Code Editor | Monaco Editor (`@monaco-editor/react`) |
 | AI / LLM | Ollama (local or cloud) via REST API |
 | Speech | Web Speech API + Web Speech Synthesis API (browser-native) |
@@ -104,6 +101,21 @@ Activated by the Rust backend on startup:
 
 ## Architecture
 
+### System Overview
+
+```
+┌─────────────────────────┐      ┌──────────────────────┐      ┌─────────────────────────┐
+│   Recruiter Portal      │      │      Supabase        │      │    Candidate App        │
+│   (React Web App)       │─────▶│   - PostgreSQL DB    │◀─────│   (Tauri Desktop)       │
+│                         │      │   - Edge Functions   │      │                         │
+│   • Create jobs         │      │   - SMTP Email       │      │   • Enter code          │
+│   • Upload resumes      │      │   - Auth             │      │   • AI Interview        │
+│   • View results        │      │                      │      │   • Submit results      │
+└─────────────────────────┘      └──────────────────────┘      └─────────────────────────┘
+```
+
+### Candidate App Modes
+
 The app has **4 modes** controlled from a single root component:
 
 ```
@@ -112,8 +124,8 @@ setup → video → coding → report
 
 | Mode | Description |
 |------|-------------|
-| `setup` | Landing screen: enter name, upload resume, generate/join interview code |
-| `video` | Full-screen video view with 3 AI agents asking questions via voice |
+| `setup` | Code entry screen: enter interview code to fetch job requirements |
+| `video` | Full-screen video view with 3 AI agents asking job-specific questions |
 | `coding` | Monaco editor workspace with questions sidebar, output panel, and agent panel |
 | `report` | Post-interview analysis with scores, Q&A breakdown, and downloadable HTML |
 
@@ -127,7 +139,13 @@ Two independent speech systems exist in the codebase:
 
 ### Backend
 
-Tauri (Rust) backend manages:
+**Supabase** manages:
+- PostgreSQL database (jobs, candidates, applications, interviews)
+- Row Level Security policies
+- Edge Functions for sending invitation emails
+- Authentication for the recruiter portal
+
+**Tauri (Rust)** backend manages:
 - Session file creation and transcript appending
 - Report generation from completed sessions
 - Window-level proctoring (screen capture exclusion)
@@ -143,6 +161,7 @@ When running outside Tauri (pure Vite dev), all backend calls fall back to `loca
 - **Node.js** 18+ with **pnpm** (or npm)
 - **Rust** 1.70+
 - **Ollama** running locally (or a cloud Ollama endpoint)
+- **Supabase** account (for recruitment screening)
 
 ### Setup
 
@@ -154,25 +173,55 @@ pnpm install
 ollama serve
 ollama pull llama3
 # Or use any Ollama-compatible endpoint via .env.local
+
+# Create the recruiter portal
+pnpm setup:recruiter
+# Or: node setup-recruiter.js
+
+# Install recruiter portal dependencies
+cd recruiter && pnpm install && cd ..
 ```
+
+### Supabase Setup
+
+1. Create a new Supabase project at https://supabase.com
+2. Run the schema in `supabase_schema.sql` in the Supabase SQL Editor
+3. Deploy the email Edge Function:
+   ```bash
+   supabase functions deploy send-interview-email
+   ```
+4. Copy your Supabase URL and anon key to `.env.local`:
+   ```env
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
+5. Copy `recruiter/.env.example` to `recruiter/.env` and add the same credentials
 
 ### Development
 
 ```bash
-# Run the full Tauri dev environment (Vite + Tauri)
+# Run the candidate app (Tauri dev environment)
 pnpm tauri dev
+
+# Run the recruiter portal (in a separate terminal)
+cd recruiter && pnpm dev
 ```
 
 ### Production Build
 
 ```bash
+# Build candidate app
 pnpm tauri build
+
+# Build recruiter portal
+cd recruiter && pnpm build
 ```
 
 Outputs:
-- **Windows**: `src-tauri/target/release/bundle/msi/`
-- **macOS**: `src-tauri/target/release/bundle/dmg/`
-- **Linux**: `src-tauri/target/release/bundle/deb/`
+- **Candidate App (Windows)**: `src-tauri/target/release/bundle/msi/`
+- **Candidate App (macOS)**: `src-tauri/target/release/bundle/dmg/`
+- **Candidate App (Linux)**: `src-tauri/target/release/bundle/deb/`
+- **Recruiter Portal**: `recruiter/dist/` (deploy to any static host)
 
 ---
 
@@ -189,6 +238,10 @@ VITE_OLLAMA_API_KEY=
 
 # Model name (defaults to llama3 if not set)
 VITE_OLLAMA_MODEL=llama3
+
+# Supabase (required for recruitment screening mode)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ---
@@ -200,6 +253,16 @@ INTERVIEW/
 ├── index.html              # Entry HTML
 ├── package.json            # Frontend dependencies and scripts
 ├── vite.config.js          # Vite + Tauri configuration
+├── setup-recruiter.js      # Script to generate recruiter portal
+├── supabase_schema.sql     # Database schema for Supabase
+├── supabase_edge_function.ts # Email sending Edge Function
+│
+├── recruiter/              # Recruiter Portal (created by setup-recruiter.js)
+│   ├── src/
+│   │   ├── pages/          # Dashboard, Jobs, Candidates, etc.
+│   │   ├── components/     # Shared UI components
+│   │   └── services/       # Supabase client
+│   └── ...
 │
 ├── src/
 │   ├── main.jsx            # React entry point
@@ -209,7 +272,7 @@ INTERVIEW/
 │   ├── components/
 │   │   ├── AgentPanel.jsx       # 3-agent panel with status indicators
 │   │   ├── AIChat.jsx           # Chat UI backed by useOllama hook
-│   │   ├── InterviewSetup.jsx    # Setup/join screen with resume upload
+│   │   ├── InterviewSetup.jsx   # Code entry screen with job confirmation
 │   │   ├── VoiceControls.jsx    # Returns null (voice handled automatically)
 │   │   └── Overlay.jsx          # Proctor/lockdown overlay
 │   │
@@ -221,6 +284,7 @@ INTERVIEW/
 │   │   └── useResize.js         # Resizable panel dimensions
 │   │
 │   ├── services/
+│   │   ├── supabase.js          # Supabase client for candidate app
 │   │   ├── ollama.js            # Ollama API client (chat, streaming, code review)
 │   │   ├── agents.js            # 3 agent personas + system prompts + introductions
 │   │   ├── codeRunner.js        # JS execution engine + test runner

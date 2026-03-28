@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(cd:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm tauri:*)"
     ]
   }
 }

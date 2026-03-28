@@ -10,6 +10,7 @@ import {
 import './App.css';
 import { AgentPanel } from './components/AgentPanel';
 import { InterviewSetup } from './components/InterviewSetup';
+import Overlay from './components/Overlay';
 import { useAgentVoice } from './hooks/useAgentVoice';
 import { useWorkspaceResize } from './hooks/useResize';
 
@@ -341,7 +342,7 @@ function VideoFeed({ stream, muted = true, className = '', style = {} }) {
    ═══════════════════════════════════════════════════════════ */
 
 function VideoCallScreen({
-  onToggleCoding, videoOn, setVideoOn, micOn, setMicOn, screenShare, setScreenShare,
+  onToggleCoding, onEndInterview, videoOn, setVideoOn, micOn, setMicOn, screenShare, setScreenShare,
   timer, stream, candidateData, agentVoice, showAgentPanel, setShowAgentPanel,
   isPendingTransition = false
 }) {
@@ -458,7 +459,7 @@ function VideoCallScreen({
 
           <span className="video-controls-divider" />
 
-          <button className="video-ctrl-btn video-ctrl-btn--end" title="End interview">
+          <button className="video-ctrl-btn video-ctrl-btn--end" onClick={onEndInterview} title="End interview">
             <PhoneOff size={20} />
           </button>
         </div>
@@ -1232,18 +1233,23 @@ function App() {
   // Interview ending state (for graceful close at 20 min)
   const interviewEndingRef = useRef(false);
 
+  // Lockdown state — overlay shown during interview
+  const [locked, setLocked] = useState(false);
+
   // Handle starting interview from setup
   const handleStartInterview = (data) => {
     setCandidateData(data);
     timer.reset();
     interviewEndingRef.current = false;
     setReport(null);
+    setLocked(true);
     setMode('video');
   };
 
   // Handle joining interview with code
   const handleJoinWithCode = (data) => {
     setCandidateData(data);
+    setLocked(true);
     setMode('video');
   };
 
@@ -1319,6 +1325,7 @@ function App() {
       // Tell agents the interview is ending (they'll finish current thought)
       const duration = timer.seconds;
       timer.stop();
+      setLocked(false);
 
       // End the voice session
       if (agentVoice.isInterviewActive) {
@@ -1456,6 +1463,43 @@ function App() {
     }, 800);
   };
 
+  // Switch to locked state when interview starts
+  useEffect(() => {
+    if (mode === 'video' || mode === 'coding') {
+      setLocked(true);
+    }
+  }, [mode]);
+
+  // Release lockdown and show report
+  const handleFinishInterview = useCallback(async () => {
+    setLocked(false);
+
+    // Stop timer and voice session
+    timer.stop();
+
+    const duration = timer.seconds;
+
+    if (agentVoice.isInterviewActive) {
+      await agentVoice.endInterview(duration);
+    }
+
+    // Generate report
+    if (agentVoice.sessionId) {
+      setReportLoading(true);
+      try {
+        const { generateReport } = await import('./services/interviewBackend');
+        const r = await generateReport(agentVoice.sessionId);
+        setReport(r);
+      } catch (e) {
+        console.error('Failed to generate report:', e);
+      } finally {
+        setReportLoading(false);
+      }
+    }
+
+    setMode('report');
+  }, [timer, agentVoice]);
+
   // Setup screen
   if (mode === 'setup') {
     return (
@@ -1482,6 +1526,7 @@ function App() {
         onStartNew={() => {
           setMode('setup');
           setReport(null);
+          setLocked(false);
           timer.reset();
           interviewEndingRef.current = false;
         }}
@@ -1491,8 +1536,11 @@ function App() {
 
   if (mode === 'video') {
     return (
-      <VideoCallScreen
+      <>
+        {locked && <Overlay onFinish={handleFinishInterview} hideQuestions={true} />}
+        <VideoCallScreen
         onToggleCoding={transitionToCoding}
+        onEndInterview={handleFinishInterview}
         videoOn={videoOn}
         setVideoOn={setVideoOn}
         micOn={micOn}
@@ -1506,12 +1554,15 @@ function App() {
         showAgentPanel={showAgentPanel}
         setShowAgentPanel={setShowAgentPanel}
         isPendingTransition={pendingMode !== null}
-      />
+        />
+      </>
     );
   }
 
   return (
-    <CodingWorkspace
+    <>
+      {locked && <Overlay onFinish={handleFinishInterview} hideQuestions={true} />}
+      <CodingWorkspace
       language={language}
       setLanguage={handleLanguageChange}
       code={code}
@@ -1544,6 +1595,7 @@ function App() {
       bottomHeight={bottomResize.size}
       bottomOnMouseDown={bottomResize.onMouseDown}
     />
+    </>
   );
 }
 

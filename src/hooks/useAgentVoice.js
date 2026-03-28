@@ -195,11 +195,14 @@ export function useAgentVoice(model = 'llama3') {
 
   /**
    * Get AI response from agent
+   * Now includes jobData for screening interviews
    */
   const getAgentResponse = useCallback(async (agentId, userMessage) => {
     setAgentStatus(agentId, AGENT_STATUS.THINKING);
     
-    const systemPrompt = getAgentPrompt(agentId, candidateData, conversationHistory);
+    // Include jobData if available (for recruitment screening)
+    const jobData = candidateData?.jobData || null;
+    const systemPrompt = getAgentPrompt(agentId, candidateData, conversationHistory, jobData);
     const history = conversationHistory[agentId] || [];
     
     const messages = [
@@ -633,8 +636,9 @@ export function useAgentVoice(model = 'llama3') {
       sessionIdRef.current = null;
     }
 
-    // Peer introduces first
-    const intro = getAgentIntroduction('peer', candidate?.name);
+    // Peer introduces first (include job title if available)
+    const jobTitle = candidate?.jobData?.title || null;
+    const intro = getAgentIntroduction('peer', candidate?.name, jobTitle);
 
     // Log agent introduction to backend
     if (sessionIdRef.current) {

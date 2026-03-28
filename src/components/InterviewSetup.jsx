@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, FileText, User, Briefcase, Code, Sparkles, Copy, Check, ArrowRight, Plus, X, Terminal } from 'lucide-react';
+import { Upload, FileText, User, Briefcase, Code, Sparkles, Copy, Check, ArrowRight, Plus, X, Terminal, Building2, AlertCircle } from 'lucide-react';
 import { parseResume } from '../services/resumeParser';
+import { getApplicationByCode, startInterview } from '../services/supabase';
 import * as pdfjsLib from 'pdfjs-dist';
 import './InterviewSetup.css';
 
@@ -44,7 +45,7 @@ function generateInterviewCode() {
 }
 
 export function InterviewSetup({ onStartInterview, onJoinWithCode }) {
-  const [mode, setMode] = useState('setup');
+  const [mode, setMode] = useState('join'); // Default to join mode for candidates
   const [candidateName, setCandidateName] = useState('');
   const [resumeText, setResumeText] = useState('');
   const [projects, setProjects] = useState([{ name: '', description: '', technologies: '' }]);
@@ -52,6 +53,9 @@ export function InterviewSetup({ onStartInterview, onJoinWithCode }) {
   const [codeCopied, setCodeCopied] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [dragActive, setDragActive] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [applicationData, setApplicationData] = useState(null);
 
   const fileInputRef = useRef(null);
 
@@ -116,12 +120,132 @@ export function InterviewSetup({ onStartInterview, onJoinWithCode }) {
     onStartInterview?.(candidateData);
   };
 
-  const handleJoinWithCode = () => {
+  // Special demo code that directly enters interview with mock data
+  const DEMO_CODE = 'DEMOCO';
+
+  const handleJoinWithCode = async () => {
+    if (joinCode.length !== 6) return;
+
+    setIsLoading(true);
+    setError('');
+
+    // Check for direct/demo code - enters interview immediately
+    if (joinCode.toUpperCase() === DEMO_CODE) {
+      const demoData = {
+        name: 'Demo Candidate',
+        resume: 'Experienced software developer with strong JavaScript and React skills.',
+        parsedResume: {
+          skills: ['JavaScript', 'React', 'Node.js', 'Python', 'SQL'],
+          experienceLevel: 'Mid',
+          yearsOfExperience: 5,
+          projects: [
+            { name: 'E-commerce Platform', description: 'Built a full-stack shopping app', technologies: ['React', 'Node.js', 'MongoDB'] },
+            { name: 'Task Manager API', description: 'REST API for task management', technologies: ['Python', 'FastAPI', 'PostgreSQL'] }
+          ]
+        },
+        skills: ['JavaScript', 'React', 'Node.js', 'Python', 'SQL'],
+        experienceLevel: 'Mid',
+        projects: [
+          { name: 'E-commerce Platform', description: 'Built a full-stack shopping app', technologies: ['React', 'Node.js', 'MongoDB'] },
+          { name: 'Task Manager API', description: 'REST API for task management', technologies: ['Python', 'FastAPI', 'PostgreSQL'] }
+        ],
+        interviewCode: DEMO_CODE,
+        isDemo: true,
+        jobData: {
+          title: 'Senior Software Engineer',
+          description: 'Build and maintain web applications',
+          requirements: '5+ years experience with JavaScript',
+          requiredSkills: ['JavaScript', 'React', 'Node.js', 'TypeScript'],
+          experienceLevel: 'Mid'
+        }
+      };
+      onJoinWithCode?.(demoData);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Fetch application data from Supabase
+      const appData = await getApplicationByCode(joinCode);
+
+      if (!appData) {
+        setError('Invalid interview code. Please check and try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (appData.status === 'completed') {
+        setError('This interview has already been completed.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (appData.status === 'expired') {
+        setError('This interview code has expired. Please contact the recruiter.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Parse the resume if available
+      const parsedResume = appData.candidate_resume ? parseResume(appData.candidate_resume) : null;
+
+      // Build candidate data with job context
+      const candidateData = {
+        name: appData.candidate_name,
+        resume: appData.candidate_resume,
+        parsedResume: parsedResume,
+        skills: appData.candidate_skills || parsedResume?.skills,
+        experienceLevel: appData.experience_level || parsedResume?.experienceLevel,
+        projects: parsedResume?.projects || [],
+        interviewCode: joinCode,
+        applicationId: appData.application_id,
+        // Job-specific data
+        jobData: {
+          title: appData.job_title,
+          description: appData.job_description,
+          requirements: appData.job_requirements,
+          requiredSkills: appData.required_skills || [],
+          experienceLevel: appData.experience_level
+        }
+      };
+
+      // Store for display before starting
+      setApplicationData(candidateData);
+      setIsLoading(false);
+
+    } catch (err) {
+      console.error('Error fetching application:', err);
+      setError('Failed to load interview. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartScreeningInterview = async () => {
+    if (!applicationData) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Mark interview as started in Supabase
+      await startInterview(joinCode);
+      
+      // Proceed to interview
+      onJoinWithCode?.(applicationData);
+    } catch (err) {
+      console.error('Error starting interview:', err);
+      setError('Failed to start interview. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  // Legacy: Keep the old generate flow for demo/testing purposes
+  const handleJoinWithCodeLegacy = () => {
     const candidateData = JSON.parse(localStorage.getItem(`interview_${joinCode}`) || 'null');
     if (candidateData) {
       onJoinWithCode?.(candidateData);
     } else {
-      alert('Invalid interview code');
+      // Try Supabase
+      handleJoinWithCode();
     }
   };
 
@@ -241,23 +365,100 @@ export function InterviewSetup({ onStartInterview, onJoinWithCode }) {
           ) : (
             /* Join mode */
             <div className="is__join">
-              <Code size={32} strokeWidth={1.5} className="is__join-icon" />
-              <h2 className="is__join-h">Enter Code</h2>
-              <p className="is__join-p">6-character interview code</p>
-              <input
-                ref={el => { if (el && mode === 'join') setTimeout(() => el.focus(), 100); }}
-                type="text"
-                className="is__join-real-inp"
-                value={joinCode}
-                onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-                maxLength={6}
-                placeholder="XXXXXX"
-                spellCheck={false}
-                autoComplete="off"
-              />
-              <button className="is__cta is__cta--narrow" onClick={handleJoinWithCode} disabled={joinCode.length !== 6}>
-                <span>Join</span><ArrowRight size={16} />
-              </button>
+              {!applicationData ? (
+                // Code entry screen
+                <>
+                  <Code size={32} strokeWidth={1.5} className="is__join-icon" />
+                  <h2 className="is__join-h">Enter Code</h2>
+                  <p className="is__join-p">6-character code or type <strong>DEMO</strong> to try</p>
+                  
+                  {error && (
+                    <div className="is__error">
+                      <AlertCircle size={14} />
+                      <span>{error}</span>
+                    </div>
+                  )}
+                  
+                  <input
+                    ref={el => { if (el && mode === 'join' && !applicationData) setTimeout(() => el.focus(), 100); }}
+                    type="text"
+                    className="is__join-real-inp"
+                    value={joinCode}
+                    onChange={e => {
+                      setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6));
+                      setError('');
+                    }}
+                    maxLength={6}
+                    placeholder={joinCode.toUpperCase() === 'DEMO' ? 'DEMO ✓' : 'XXXXXX'}
+                    spellCheck={false}
+                    autoComplete="off"
+                    disabled={isLoading}
+                  />
+                  <button 
+                    className="is__cta is__cta--narrow" 
+                    onClick={handleJoinWithCode} 
+                    disabled={joinCode.length !== 6 || isLoading}
+                  >
+                    <span>{isLoading ? 'Loading...' : 'Continue'}</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </>
+              ) : (
+                // Job details confirmation screen
+                <>
+                  <div className="is__job-confirm">
+                    <div className="is__job-icon">
+                      <Building2 size={28} />
+                    </div>
+                    <h2 className="is__join-h">Ready for Interview</h2>
+                    
+                    <div className="is__job-card">
+                      <div className="is__job-title">{applicationData.jobData?.title || 'Software Developer'}</div>
+                      {applicationData.jobData?.requiredSkills?.length > 0 && (
+                        <div className="is__job-skills">
+                          {applicationData.jobData.requiredSkills.slice(0, 5).map((skill, i) => (
+                            <span key={i} className="is__skill-tag">{skill}</span>
+                          ))}
+                          {applicationData.jobData.requiredSkills.length > 5 && (
+                            <span className="is__skill-more">+{applicationData.jobData.requiredSkills.length - 5}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="is__job-candidate">
+                      <User size={14} />
+                      <span>{applicationData.name}</span>
+                    </div>
+                    
+                    <div className="is__job-info">
+                      <p>You'll be interviewed by 3 AI agents who will ask questions based on your resume and the job requirements.</p>
+                      <p>The interview typically takes 20-30 minutes.</p>
+                    </div>
+                    
+                    <div className="is__done-btns">
+                      <button 
+                        className="is__cta" 
+                        onClick={handleStartScreeningInterview}
+                        disabled={isLoading}
+                      >
+                        <span>{isLoading ? 'Starting...' : 'Start Interview'}</span>
+                        <ArrowRight size={16} />
+                      </button>
+                      <button 
+                        className="is__ghost" 
+                        onClick={() => {
+                          setApplicationData(null);
+                          setJoinCode('');
+                          setError('');
+                        }}
+                      >
+                        Use Different Code
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

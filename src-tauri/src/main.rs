@@ -448,11 +448,10 @@ fn main() {
                 "main",
                 tauri::WebviewUrl::App("index.html".into()),
             )
-            .title("Interview Lock")
+            .title("Interview")
             .maximized(true)
             .decorations(false)
             .always_on_top(true)
-            .transparent(true)
             .build()?;
 
             #[cfg(target_os = "windows")]

@@ -1,18 +1,27 @@
 /**
  * Agent Personas and Prompts Service
  * Defines the personality, style, and system prompts for each interviewer agent
+ * 
+ * RECRUITMENT SCREENING VERSION:
+ * - Agents now evaluate candidates against specific job requirements
+ * - Questions are tailored to both resume and job skills
+ * - Focus on determining fit for the specific role
  */
 
 import { parseResume, generateCandidateContext as generateResumeContext } from './resumeParser';
 import { getAgentQuestionPrompt } from './questionGenerator';
 
 /**
- * Base context that all agents share
+ * Base context that all agents share - now includes job context
  */
-const BASE_CONTEXT = `You are conducting a technical interview for a software engineering position.
-The candidate has provided their resume and project details. Focus on their actual experience and projects.
+const BASE_CONTEXT = `You are conducting a technical screening interview for a specific job position.
+The candidate has applied for this role and you must evaluate their fit based on:
+1. The job requirements and required skills
+2. The candidate's resume and experience
+3. Their ability to perform the specific duties of this role
+
 DO NOT ask Data Structures & Algorithms (DSA) or LeetCode-style questions.
-Focus on real-world technical discussions about their work.`;
+Focus on real-world technical discussions and how their experience maps to job requirements.`;
 
 /**
  * Agent System Prompts
@@ -104,10 +113,62 @@ CRITICAL: Maximum 25 words per response. Be direct and precise.`,
 };
 
 /**
+ * Generate job requirements context
+ */
+export function generateJobContext(jobData) {
+  if (!jobData) return '';
+  
+  let context = `\n\n--- JOB REQUIREMENTS ---\n`;
+  context += `Position: ${jobData.title || 'Software Developer'}\n`;
+  
+  if (jobData.company) {
+    context += `Company: ${jobData.company}\n`;
+  }
+  
+  if (jobData.description) {
+    context += `\nJob Description:\n${jobData.description}\n`;
+  }
+  
+  if (jobData.requirements) {
+    context += `\nRequirements:\n${jobData.requirements}\n`;
+  }
+  
+  if (jobData.requiredSkills && jobData.requiredSkills.length > 0) {
+    context += `\nRequired Skills: ${jobData.requiredSkills.join(', ')}\n`;
+  }
+  
+  if (jobData.preferredSkills && jobData.preferredSkills.length > 0) {
+    context += `Preferred Skills: ${jobData.preferredSkills.join(', ')}\n`;
+  }
+  
+  if (jobData.experienceLevel && jobData.experienceLevel !== 'any') {
+    context += `Experience Level: ${jobData.experienceLevel}\n`;
+  }
+  
+  if (jobData.minYearsExperience) {
+    context += `Minimum Years of Experience: ${jobData.minYearsExperience}\n`;
+  }
+  
+  context += `\nYOUR GOAL: Evaluate if this candidate's experience matches these job requirements.
+Ask questions that help determine their proficiency in the REQUIRED SKILLS listed above.
+Note any gaps between their experience and job requirements.
+--- END JOB REQUIREMENTS ---\n`;
+  
+  return context;
+}
+
+/**
  * Generate context from candidate's resume/profile
  */
-export function generateCandidateContext(candidateData) {
+export function generateCandidateContext(candidateData, jobData = null) {
   if (!candidateData) return '';
+  
+  let context = '';
+  
+  // Add job context first if available
+  if (jobData) {
+    context += generateJobContext(jobData);
+  }
   
   // If resume text is provided, parse it
   let parsedResume = candidateData.parsedResume;
@@ -118,13 +179,20 @@ export function generateCandidateContext(candidateData) {
   
   // Use the resume parser's context generator
   if (parsedResume) {
-    return '\n\n' + generateResumeContext(parsedResume, candidateData.name);
+    context += '\n\n' + generateResumeContext(parsedResume, candidateData.name);
+    
+    // Add skill gap analysis if job data is available
+    if (jobData && jobData.requiredSkills) {
+      context += generateSkillGapAnalysis(parsedResume, jobData);
+    }
+    
+    return context;
   }
   
   // Fallback to manual context if no resume
   const { name, projects, skills, experience } = candidateData;
   
-  let context = `\n\n--- CANDIDATE INFORMATION ---\n`;
+  context += `\n\n--- CANDIDATE INFORMATION ---\n`;
   context += `Name: ${name || 'Candidate'}\n`;
   
   if (skills && skills.length > 0) {
@@ -151,9 +219,49 @@ export function generateCandidateContext(candidateData) {
 }
 
 /**
- * Get the full system prompt for an agent with candidate context
+ * Analyze gaps between candidate skills and job requirements
  */
-export function getAgentPrompt(agentId, candidateData = null, allConversationHistory = {}) {
+function generateSkillGapAnalysis(parsedResume, jobData) {
+  const candidateSkills = [
+    ...(parsedResume.skills?.languages || []),
+    ...(parsedResume.skills?.frontend || []),
+    ...(parsedResume.skills?.backend || []),
+    ...(parsedResume.skills?.database || []),
+    ...(parsedResume.skills?.devops || []),
+    ...(parsedResume.skills?.tools || [])
+  ].map(s => s.toLowerCase());
+  
+  const requiredSkills = (jobData.requiredSkills || []).map(s => s.toLowerCase());
+  
+  const matchedSkills = requiredSkills.filter(skill => 
+    candidateSkills.some(cs => cs.includes(skill) || skill.includes(cs))
+  );
+  
+  const missingSkills = requiredSkills.filter(skill => 
+    !candidateSkills.some(cs => cs.includes(skill) || skill.includes(cs))
+  );
+  
+  let analysis = `\n\n--- SKILL FIT ANALYSIS ---\n`;
+  analysis += `Matched Required Skills: ${matchedSkills.length}/${requiredSkills.length}\n`;
+  
+  if (matchedSkills.length > 0) {
+    analysis += `✓ Has: ${matchedSkills.join(', ')}\n`;
+  }
+  
+  if (missingSkills.length > 0) {
+    analysis += `✗ Missing/Unclear: ${missingSkills.join(', ')}\n`;
+    analysis += `\nIMPORTANT: Ask about the missing skills to determine if the candidate has experience not listed on resume.\n`;
+  }
+  
+  analysis += `--- END SKILL FIT ANALYSIS ---\n`;
+  
+  return analysis;
+}
+
+/**
+ * Get the full system prompt for an agent with candidate and job context
+ */
+export function getAgentPrompt(agentId, candidateData = null, allConversationHistory = {}, jobData = null) {
   const agentConfig = AGENT_PROMPTS[agentId];
   if (!agentConfig) {
     throw new Error(`Unknown agent: ${agentId}`);
@@ -161,8 +269,9 @@ export function getAgentPrompt(agentId, candidateData = null, allConversationHis
 
   let prompt = agentConfig.systemPrompt;
 
+  // Add candidate context (which now includes job context if provided)
   if (candidateData) {
-    prompt += generateCandidateContext(candidateData);
+    prompt += generateCandidateContext(candidateData, jobData);
   }
 
   // Build shared conversation context from all agents
@@ -215,17 +324,20 @@ export function getAgentVoiceConfig(agentId) {
 
 /**
  * Generate interview introduction for an agent
+ * Now includes job title in introduction
  */
-export function getAgentIntroduction(agentId, candidateName = 'there') {
+export function getAgentIntroduction(agentId, candidateName = 'there', jobTitle = null) {
+  const jobMention = jobTitle ? ` for the ${jobTitle} position` : '';
+  
   const intros = {
-    peer: `Hey ${candidateName}! I'm Alex, one of the developers on the team. I'm excited to chat with you today about your experience. Don't worry, this is going to be pretty casual - I just want to learn about what you've worked on. Ready to get started?`,
+    peer: `Hey ${candidateName}! I'm Alex, one of the developers on the team. Thanks for interviewing${jobMention}. I'm excited to chat with you about your experience. Don't worry, this is going to be pretty casual - I just want to learn about what you've worked on. Ready to get started?`,
     
-    teamLead: `Hello ${candidateName}, I'm Sarah, the Tech Lead. I'll be asking you about your technical decisions and how you approach problems. I'm particularly interested in hearing about your project architectures and how you work with teams. Let's dive in.`,
+    teamLead: `Hello ${candidateName}, I'm Sarah, the Tech Lead. Thanks for applying${jobMention}. I'll be asking you about your technical decisions and how you approach problems. I'm particularly interested in hearing about your project architectures and how you work with teams. Let's dive in.`,
     
-    veteran: `${candidateName}, I'm James, Principal Engineer. I've been in this industry for a while, and I'm going to ask you some detailed questions about your technical work. I want to understand the depth of your experience. Let's get started.`
+    veteran: `${candidateName}, I'm James, Principal Engineer. I'll be part of your screening${jobMention}. I've been in this industry for a while, and I'm going to ask you some detailed questions about your technical work. I want to understand the depth of your experience. Let's get started.`
   };
   
-  return intros[agentId] || `Hello ${candidateName}, let's begin the interview.`;
+  return intros[agentId] || `Hello ${candidateName}, let's begin the interview${jobMention}.`;
 }
 
 /**
@@ -245,6 +357,7 @@ Keep your follow-up to 1-2 sentences.`;
 export default {
   AGENT_PROMPTS,
   generateCandidateContext,
+  generateJobContext,
   getAgentPrompt,
   getAgentVoiceConfig,
   getAgentIntroduction,

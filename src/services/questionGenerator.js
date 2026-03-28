@@ -1,7 +1,11 @@
 /**
  * Question Generation Service
  * Generates project-based technical interview questions
- * based on candidate's resume and skills
+ * based on candidate's resume, skills, AND job requirements
+ * 
+ * RECRUITMENT SCREENING VERSION:
+ * - Prioritizes questions about required job skills
+ * - Evaluates fit for specific role
  */
 
 import { parseResume, generateCandidateContext } from './resumeParser';
@@ -95,13 +99,39 @@ const QUESTION_TEMPLATES = {
 };
 
 /**
- * Generate questions based on candidate's profile
+ * Generate questions based on candidate's profile AND job requirements
  */
-export function generateQuestions(candidateData) {
+export function generateQuestions(candidateData, jobData = null) {
   const questions = [];
   const { skills, projects } = candidateData.parsedResume || parseResume(candidateData.resume || '');
 
-  // Project-based questions (highest priority)
+  // If job data is available, prioritize required skills questions
+  if (jobData && jobData.requiredSkills && jobData.requiredSkills.length > 0) {
+    jobData.requiredSkills.forEach((skill, index) => {
+      const skillQuestions = QUESTION_TEMPLATES.skillBased[skill];
+      if (skillQuestions) {
+        const question = skillQuestions[Math.floor(Math.random() * skillQuestions.length)];
+        questions.push({
+          category: 'job-requirement',
+          question,
+          relatedTo: skill,
+          priority: 0, // Highest priority
+          isRequired: true
+        });
+      } else {
+        // Generate a generic question for skills not in templates
+        questions.push({
+          category: 'job-requirement',
+          question: `Tell me about your experience with ${skill}. What projects have you used it in?`,
+          relatedTo: skill,
+          priority: 0,
+          isRequired: true
+        });
+      }
+    });
+  }
+
+  // Project-based questions (highest priority after job requirements)
   const candidateProjects = candidateData.projects || projects || [];
   candidateProjects.slice(0, 3).forEach(project => {
     const projectName = project.name || project;
@@ -115,7 +145,7 @@ export function generateQuestions(candidateData) {
     });
   });
 
-  // Skill-based questions
+  // Skill-based questions from candidate's resume
   const allSkills = [
     ...(skills?.languages || []),
     ...(skills?.frontend || []),
@@ -124,7 +154,13 @@ export function generateQuestions(candidateData) {
     ...(skills?.devops || [])
   ];
 
-  allSkills.slice(0, 5).forEach(skill => {
+  // Filter out skills already covered by job requirements
+  const jobRequiredSkills = (jobData?.requiredSkills || []).map(s => s.toLowerCase());
+  const remainingSkills = allSkills.filter(s => 
+    !jobRequiredSkills.includes(s.toLowerCase())
+  );
+
+  remainingSkills.slice(0, 3).forEach(skill => {
     const skillQuestions = QUESTION_TEMPLATES.skillBased[skill];
     if (skillQuestions) {
       const question = skillQuestions[Math.floor(Math.random() * skillQuestions.length)];
@@ -137,8 +173,30 @@ export function generateQuestions(candidateData) {
     }
   });
 
+  // Job-specific experience questions
+  if (jobData) {
+    const targetLevel = jobData.experienceLevel || candidateData.experienceLevel;
+    
+    if (targetLevel === 'senior' || targetLevel === 'lead') {
+      questions.push({
+        category: 'job-fit',
+        question: `This role requires ${targetLevel}-level expertise. Can you describe a situation where you led a technical initiative or mentored other developers?`,
+        priority: 1
+      });
+    }
+    
+    if (jobData.minYearsExperience && jobData.minYearsExperience > 0) {
+      questions.push({
+        category: 'job-fit',
+        question: `Walk me through your most significant achievement over your ${jobData.minYearsExperience}+ years of experience.`,
+        priority: 1
+      });
+    }
+  }
+
   // Architecture questions (for mid/senior)
-  if (candidateData.experienceLevel !== 'junior') {
+  const effectiveLevel = jobData?.experienceLevel || candidateData.experienceLevel;
+  if (effectiveLevel !== 'junior') {
     const archQ = QUESTION_TEMPLATES.architecture;
     questions.push({
       category: 'architecture',
@@ -168,8 +226,20 @@ export function getFollowUpPrompt(previousQuestion, skill) {
 
 /**
  * Generate an opening question for the interview
+ * Now includes job context
  */
-export function getOpeningQuestion(candidateData) {
+export function getOpeningQuestion(candidateData, jobData = null) {
+  // If we have job data, mention the role
+  if (jobData && jobData.title) {
+    const projects = candidateData.projects || [];
+    if (projects.length > 0) {
+      const project = projects[0];
+      return `Thanks for applying for the ${jobData.title} role. I see you worked on ${project.name || project}. That looks relevant! Can you give me a brief overview of what it does and how it relates to the kind of work you'd do in this role?`;
+    }
+    return `Thanks for applying for the ${jobData.title} position. To get started, tell me about a recent project that you think best demonstrates the skills needed for this role.`;
+  }
+  
+  // Fallback to original behavior
   const projects = candidateData.projects || [];
   if (projects.length > 0) {
     const project = projects[0];
@@ -181,34 +251,56 @@ export function getOpeningQuestion(candidateData) {
 
 /**
  * Create agent-specific question prompts
+ * Now includes job requirements context
  */
-export function getAgentQuestionPrompt(agentType, candidateData, conversationHistory) {
+export function getAgentQuestionPrompt(agentType, candidateData, conversationHistory, jobData = null) {
   const context = generateCandidateContext(
     candidateData.parsedResume || parseResume(candidateData.resume || ''),
     candidateData.name
   );
 
+  // Add job context if available
+  let jobContext = '';
+  if (jobData) {
+    jobContext = `
+--- JOB REQUIREMENTS ---
+Position: ${jobData.title || 'Software Developer'}
+Required Skills: ${(jobData.requiredSkills || []).join(', ')}
+Experience Level: ${jobData.experienceLevel || 'any'}
+${jobData.requirements ? `Requirements: ${jobData.requirements}` : ''}
+--- END JOB REQUIREMENTS ---
+
+YOUR PRIMARY GOAL: Evaluate if this candidate is qualified for THIS SPECIFIC ROLE.
+Focus questions on the required skills and determine their proficiency level.
+`;
+  }
+
   const basePrompts = {
     peer: `You are Alex, a friendly peer developer conducting a casual technical conversation. 
 Ask about fundamentals and day-to-day development practices. Be encouraging and conversational.
-Focus on: How they approach problems, their learning process, tools they use daily.`,
+Focus on: How they approach problems, their learning process, tools they use daily.
+${jobData ? 'Evaluate their comfort level with the required skills for this role.' : ''}`,
     
     teamLead: `You are Sarah, a tech lead evaluating architecture and system design capabilities.
 Ask about design decisions, scalability considerations, and team collaboration.
-Focus on: Why they made certain choices, how they handle complexity, cross-team communication.`,
+Focus on: Why they made certain choices, how they handle complexity, cross-team communication.
+${jobData ? 'Assess if their experience level matches what this role requires.' : ''}`,
     
     veteran: `You are James, a principal engineer with deep expertise. 
 Dig into edge cases, performance implications, and long-term maintainability.
-Focus on: Trade-offs, failure scenarios, production issues, technical debt management.`
+Focus on: Trade-offs, failure scenarios, production issues, technical debt management.
+${jobData ? 'Determine the depth of their expertise in the required skills.' : ''}`
   };
 
   return `${basePrompts[agentType]}
 
+${jobContext}
 ${context}
 
 IMPORTANT RULES:
 - Ask ONE question at a time
 - Base questions on their specific projects and skills listed above
+${jobData ? '- PRIORITIZE questions about REQUIRED SKILLS for this job' : ''}
 - DO NOT ask DSA, leetcode, or algorithm questions
 - Focus on their real experience and decision-making
 - Keep responses conversational (2-3 sentences max)
